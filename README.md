@@ -1,5 +1,7 @@
 # Relatório do Projeto.
 
+## Nomes: Ana Julia Matozo Rodrigues: 23027461, Letícia Lima da Silva: 23918691, Murilo Euphrasio Brito: 23028685
+
 ### Objetivo
 Este projeto foi desenvolvido para implementar uma API de gerenciamento de produtos com persistência de dados no MySQL e uso de cache com Redis. O objetivo principal é reduzir o tempo de resposta em consultas de produtos e melhorar o desempenho, utilizando uma abordagem de cache para armazenar resultados frequentemente acessados.
 
