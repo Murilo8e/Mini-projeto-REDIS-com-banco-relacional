@@ -6,27 +6,26 @@ Este projeto foi desenvolvido para implementar uma API de gerenciamento de produ
 ### Estrutura da Solução Implementada
 A solução está dividida em três principais arquivos:
 
-db.ts: Configura as conexões com os bancos Redis e MySQL, usando variáveis de ambiente para definir as credenciais.
+db.ts: 
+Configura as conexões com os bancos Redis e MySQL, usando variáveis de ambiente para definir as credenciais.
 Redis é utilizado como cache para melhorar a performance nas consultas, enquanto o MySQL é o banco de dados relacional onde os dados são persistidos.
-ProductsRepository.ts:
 
+ProductsRepository.ts:
 Esta classe gerencia todas as operações CRUD (Create, Read, Update, Delete) dos produtos. Ela implementa a lógica de sincronização entre o MySQL e o Redis.
 Cada método tenta primeiro buscar ou atualizar os dados no Redis antes de acessar o MySQL, garantindo que o cache esteja sempre atualizado:
 Método getAll: Busca todos os produtos. Verifica o Redis e, caso os dados não estejam em cache, consulta o MySQL e armazena os resultados no Redis.
 Método getById: Busca um produto específico pelo ID. Primeiramente, tenta obter o produto do cache e, se não estiver lá, busca no MySQL e armazena no Redis.
 Método add: Adiciona um novo produto no banco de dados e atualiza o cache invalidando a lista completa de produtos.
 Método delete: Remove um produto específico do banco e também do cache, invalidando o cache da lista completa para manter a consistência.
-server.ts:
 
+server.ts:
 Configura as rotas da API para realizar operações CRUD nos produtos.
 Usa a classe ProductsRepository para executar as operações, que realiza a busca e manipulação dos dados entre o MySQL e o Redis.
 Endpoints:
 GET /getAllProducts: Retorna a lista completa de produtos.
-GET /getProduct/
-: Retorna um produto específico pelo ID.
+GET /getProduct/ : Retorna um produto específico pelo ID.
 POST /addProduct: Adiciona um novo produto com base nos dados recebidos no corpo da requisição.
-DELETE /deleteProduct/
-: Remove um produto específico pelo ID.
+DELETE /deleteProduct/ : Remove um produto específico pelo ID.
 
 ### Benefícios da Solução
 Desempenho Acelerado: Utilizando o Redis como cache, reduzimos o número de consultas ao MySQL, o que melhora o tempo de resposta nas consultas mais frequentes.
