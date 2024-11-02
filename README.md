@@ -1,37 +1,55 @@
-# Trabalho Datastore REDIS com BD Relacional.
+# Relatório do Projeto.
 
-### Regras
-- Equipes de três ou quatro integrantes (deverão formar as equipes no canvas)
-- Ler atentamente a definição do trabalho.
-- Data exata para entrega do projeto: 01/11 das 08:00 as 23:59h (pelo Canvas).
+### Objetivo
+Este projeto foi desenvolvido para implementar uma API de gerenciamento de produtos com persistência de dados no MySQL e uso de cache com Redis. O objetivo principal é reduzir o tempo de resposta em consultas de produtos e melhorar o desempenho, utilizando uma abordagem de cache para armazenar resultados frequentemente acessados.
 
-### Definição
+### Estrutura da Solução Implementada
+A solução está dividida em três principais arquivos:
 
-O trabalho consiste em colocar o REDIS para funcionar em conjunto com o banco de dados relacional MySQL. Há diversas estratégias que você e sua equipe podem adotar. 
+db.ts: Configura as conexões com os bancos Redis e MySQL, usando variáveis de ambiente para definir as credenciais.
+Redis é utilizado como cache para melhorar a performance nas consultas, enquanto o MySQL é o banco de dados relacional onde os dados são persistidos.
+ProductsRepository.ts:
 
-É importante destacar um cenário real: imagine que este backend seja de uma loja virtual e constantemente os produtos são buscados por milhares de usuários quase que em mesmo instante.
+Esta classe gerencia todas as operações CRUD (Create, Read, Update, Delete) dos produtos. Ela implementa a lógica de sincronização entre o MySQL e o Redis.
+Cada método tenta primeiro buscar ou atualizar os dados no Redis antes de acessar o MySQL, garantindo que o cache esteja sempre atualizado:
+Método getAll: Busca todos os produtos. Verifica o Redis e, caso os dados não estejam em cache, consulta o MySQL e armazena os resultados no Redis.
+Método getById: Busca um produto específico pelo ID. Primeiramente, tenta obter o produto do cache e, se não estiver lá, busca no MySQL e armazena no Redis.
+Método add: Adiciona um novo produto no banco de dados e atualiza o cache invalidando a lista completa de produtos.
+Método delete: Remove um produto específico do banco e também do cache, invalidando o cache da lista completa para manter a consistência.
+server.ts:
 
-Então, você terá que adaptar o código fornecido para que: 
+Configura as rotas da API para realizar operações CRUD nos produtos.
+Usa a classe ProductsRepository para executar as operações, que realiza a busca e manipulação dos dados entre o MySQL e o Redis.
+Endpoints:
+GET /getAllProducts: Retorna a lista completa de produtos.
+GET /getProduct/
+: Retorna um produto específico pelo ID.
+POST /addProduct: Adiciona um novo produto com base nos dados recebidos no corpo da requisição.
+DELETE /deleteProduct/
+: Remove um produto específico pelo ID.
 
-- Sempre que um produto for cadastrado, deverá ser gravado no banco e ter a garantia que ele foi também para o cache no REDIS.
+### Benefícios da Solução
+Desempenho Acelerado: Utilizando o Redis como cache, reduzimos o número de consultas ao MySQL, o que melhora o tempo de resposta nas consultas mais frequentes.
+Consistência de Dados: A cada atualização no banco de dados, o cache é atualizado ou invalidado. Isso evita problemas de dados desatualizados em cache.
+Escalabilidade: Ao reduzir a carga no banco MySQL, a API pode lidar com mais requisições simultâneas sem degradar o desempenho.
 
-- Sempre que um produto for excluído, deve ser imediatamente retirado do cache e também do banco. 
+### Problemas que a Solução Não Resolve
+Expiração do Cache: A solução atual não define uma política de expiração para os dados no Redis. Dados cacheados permanecem até serem explicitamente invalidados. Isso pode ser um problema se o sistema crescer significativamente, pois os dados desatualizados podem permanecer em cache indefinidamente.
 
-- As consultas aos produtos deverão ser sempre realizadas no cache. No entanto, quando seu servidor iniciar pela primeira vez, deverá carregar o cache para uma primeira vez. 
+Concorrência de Atualizações: O cache é atualizado ou invalidado sempre que há mudanças no banco, mas a solução atual não considera situações de alta concorrência, onde múltiplas atualizações podem ocorrer simultaneamente. Nesse caso, podem ocorrer situações onde dados inconsistentes sejam exibidos temporariamente.
 
-### Aspectos importantes da solução:
+Problemas de Conectividade: A solução pressupõe que tanto o Redis quanto o MySQL estão sempre disponíveis. Em caso de falha de conectividade com o Redis, o sistema continuaria a funcionar, mas perderia os benefícios de desempenho do cache. No entanto, a ausência do MySQL resultaria em erro ao tentar acessar ou modificar dados, já que é o repositório de dados primário.
 
-Não pode perder a sincronia entre MySQL e Redis. Qualquer perda de sincronia afetará completamente a solução (via backend)
+Atualizações Parciais: A implementação atual foca nas operações de criação e exclusão, mas não inclui operações de atualização de produtos. A adição de uma operação update exigiria uma lógica adicional para garantir que o cache seja atualizado apropriadamente.
 
-Se o banco de dados for manipulado manualmente, no caso deste trabalho, é possível compreender que todo o sistema ficará comprometido. Mas, se houvesse a necessidade de sincronizar o REDIS novamente, como você faria? Caso houvesse edição manual dos dados diretamente no MySQL? 
+### Resultados Observados
+Durante os testes da API, os seguintes comportamentos foram observados:
 
-### Entrega: 
+Redução de Tempo de Resposta: A primeira consulta para getAllProducts e getProduct/:id leva mais tempo, pois os dados são carregados diretamente do MySQL. Consultas subsequentes, no entanto, são atendidas pelo Redis e exibem uma resposta muito mais rápida, evidenciando a eficácia do cache.
 
-01/11 via CANVAS das 08:00 até as 23:59
+Sincronização Consistente: A sincronização entre Redis e MySQL funcionou conforme esperado. Após operações de criação ou exclusão, a invalidação do cache garantiu que novas consultas retornassem dados atualizados diretamente do banco.
 
-Entregar um arquivo ZIP contendo:
-- Um relatório explicando a solução implementada, problemas que ela não resolve e resultados observados (sua equipe terá que testar para garantir que o que está sendo entregue funcione)
-- Código completo comentado
+Estabilidade Geral: Durante os testes, a aplicação manteve-se estável e funcional, tanto nas operações de cache quanto de acesso ao banco de dados. No entanto, seria recomendado implementar um monitoramento para capturar métricas de desempenho e uso do cache em cenários reais
 
-**Importante:** Os membros do grupo devem estar inscritos na equipe pelo canvas durante a aula teórica de 28/11 - não serão aceitas inclusões de nomes após a entrega dos trabalhos. 
-
+### Conclusão
+A solução implementada cumpre os requisitos de gerenciamento de produtos com melhoria de desempenho usando o Redis como cache, garantindo dados consistentes entre cache e banco. Embora a solução apresente limitações, ela oferece uma base sólida para um sistema escalável e eficiente. Com as melhorias sugeridas, a API pode ser ainda mais otimizada para cenários de alta demanda e escalabilidade.
